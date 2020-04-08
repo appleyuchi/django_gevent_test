@@ -1,0 +1,55 @@
+#------------------------------------------------下面是准备工作-----------------------------------
+python manage.py makemigrations
+python manage.py migrate
+
+#-----------------------------------------下面是同步方式测试-----------------------------------------
+settings.py中CONN_MAX_AGE注释掉
+必须在manage.py文件所在路径执行：
+python manage.py runserver
+mysql>create database geventuse;
+并发测试:
+siege -c255 -t200S -v -b "http://127.0.0.1:8000/test POST appid=111"
+
+测试结果：
+Transaction rate:	      180.04 trans/sec
+
+#-------------------------------下面是django+gevent测试-------------------------------------------
+settings.py中CONN_MAX_AGE注释掉
+必须在manage.py文件所在路径执行：
+gunicorn -c gun.py geventuse.wsgi:application
+
+并发测试:
+siege -c255 -t200S -v -b "http://127.0.0.1:8000/test POST appid=111"
+
+#-------------------------------下面是django+gevent+CONN_MAX_AGE测试-------------------------------------------
+必须在manage.py文件所在路径执行：
+gunicorn -c gun.py geventuse.wsgi:application
+
+并发测试:
+siege -c255 -t200S -v -b "http://127.0.0.1:8000/test POST appid=111"
+
+
+
+#-------------------------------下面是django+gthread测试--------------------------------------------
+settings.py中CONN_MAX_AGE注释掉
+必须在manage.py文件所在路径执行：
+gunicorn --env DJANGO_SETTINGS_MODULE=geventuse.settings geventuse.wsgi:application -w 4 -b 127.0.0.1:8000 -k gthread --threads 40 --max-requests 4096 --max-requests-jitter 512
+
+并发测试:
+siege -c255 -t200S -v -b "http://127.0.0.1:8000/test POST appid=111"
+
+测试结果：
+Transaction rate:	      283.38 trans/sec
+
+#-------------------------------下面是django+gthread+CONN_MAX_AGE测试--------------------------------------------
+settings.py中CONN_MAX_AGE设置为600
+必须在manage.py文件所在路径执行：
+gunicorn --env DJANGO_SETTINGS_MODULE=geventuse.settings geventuse.wsgi:application -w 4 -b 127.0.0.1:8000 -k gthread --threads 40 --max-requests 4096 --max-requests-jitter 512
+
+
+并发测试:
+siege -c255 -t200S -v -b "http://127.0.0.1:8000/test POST appid=111"
+
+测试结果:
+Transaction rate:	      533.39 trans/sec
+
